@@ -7,31 +7,26 @@ import re
 import time
 from urllib.parse import urljoin
 
-# --- הגדרות אישיות משופרות ---
+# --- הגדרות אישיות ---
 MY_RESUME = """
 Name: Liam Edelman
 Location: Tel Aviv, Israel
 Looking for: 
-1. Junior Project Management / Operations / Coordinator roles (Based on my experience as Site Manager).
-2. Customer Success / Customer Support roles (Open to all levels, not just Junior).
-
+1. Junior Project Management / Operations / Coordinator roles.
+2. Customer Success / Customer Support roles (Open to all levels).
 Experience:
-- Project & Site Manager: Managed end-to-end projects, timelines, suppliers, and clients.
-- Customer Service (Giraffe): High-pressure environment, service-oriented.
-- IDF Recruiter: Data-driven, sorting and matching candidates.
-
+- Project & Site Manager: Managed end-to-end projects.
+- Customer Service (Giraffe): High-pressure environment.
+- IDF Recruiter: Data-driven.
 Skills: SQL, Excel, Tech-savvy, English (Proficient), Hebrew (Native).
 """
 
-# --- מילות מפתח מעודכנות ---
-# הוספתי לכאן Project, Coordinator, Success
 KEYWORDS_INCLUDE = [
     "Success", "Support", "Care", "Operation", "Project", "Coordinator",
     "Community", "Game", "Junior", "Entry", "Specialist", "QA",
     "Trust", "Product", "Tier", "Analyst", "Manager", "Admin"
 ]
 
-# הורדתי את "Manager" מהחסימה כדי שלא תפספס ניהול פרויקטים
 KEYWORDS_EXCLUDE = [
     "Senior", "Head", "Director", "VP", "Chief",
     "Engineer", "Developer", "DevOps", "Backend", "Frontend",
@@ -48,11 +43,14 @@ def load_companies():
         with open("companies.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
+        print("⚠️ Warning: companies.json not found. Please create it!")
         return []
 
 def load_history():
-    # מחזיר רשימה ריקה כדי לוודא שאתה רואה תוצאות עכשיו (בטל את ההערה בהמשך כדי לזכור)
-    return [] 
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            return json.load(f)
+    return []
 
 def save_history(history):
     with open(HISTORY_FILE, "w") as f:
@@ -134,27 +132,15 @@ def fetch_jobs(company):
 
 def matches_filter(title, location):
     title_lower = title.lower()
+    if any(kw.lower() in title_lower for kw in KEYWORDS_EXCLUDE): return False
+    if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): return False
     
-    # בדיקת מילות חסימה (כמו Senior, Engineer)
-    if any(kw.lower() in title_lower for kw in KEYWORDS_EXCLUDE): 
-        return False
-    
-    # בדיקת מילות חיוב
-    if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): 
-        return False
-    
-    # --- סינון ישראל קשוח ---
     if location and len(location) > 2:
         loc_lower = location.lower()
-        # חייב להיות ישראל או תל אביב או חיפה וכו'
         is_israel = "israel" in loc_lower or "tel aviv" in loc_lower or "jerusalem" in loc_lower or "herzliya" in loc_lower or "haifa" in loc_lower or "remote" in loc_lower
-        
-        # אם כתוב רק "Remote" בלי מדינה, ה-AI יחליט. אם כתוב מדינה אחרת - לפסול.
         if not is_israel:
-             # אם המיקום הוא מפורשות מדינה אחרת
              if "united states" in loc_lower or "london" in loc_lower or "uk" in loc_lower or "germany" in loc_lower:
                  return False
-            
     return True
 
 def rate_job_with_ai(title, company_name, location, url, model):
@@ -165,17 +151,14 @@ def rate_job_with_ai(title, company_name, location, url, model):
     Link: {url}
 
     LOGIC:
-    1. **LOCATION**: MUST be Israel. If text says "US", "UK", "Europe" -> Score 0.
+    1. LOCATION: MUST be Israel. If text says "US", "UK", "Europe" -> Score 0.
+    2. ROLE TYPE MATCHING:
+       - IF "Customer Support" or "Customer Success": High Score (75-100). Flexible exp.
+       - IF "Project Manager" / "Operations": High Score ONLY if Junior/Entry.
+       - IF "Engineering": Score 0.
     
-    2. **ROLE TYPE MATCHING**:
-       - IF "Customer Support" or "Customer Success": High Score (75-100). Experience level is flexible (don't reject if not Junior).
-       - IF "Project Manager" / "Operations" / "Coordinator": High Score ONLY if "Junior" or "Entry Level" or matches 1-2 years experience.
-       - IF "Engineering" / "Developer": Score 0.
-
-    3. **OUTPUT**:
-       Return JSON ONLY: {{"score": int, "reason": "concise explanation"}}
+    Return JSON ONLY: {{"score": int, "reason": "concise explanation"}}
     """
-    
     try:
         response = model.generate_content(prompt)
         text = response.text.strip().replace("```json", "").replace("```", "")
@@ -187,6 +170,72 @@ def rate_job_with_ai(title, company_name, location, url, model):
 # --- Main Execution ---
 
 def main():
+    # --- תיקון קריטי: יצירת הקובץ מיד כדי למנוע קריסה ---
+    if not os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "w") as f:
+            json.dump([], f)
+    # -----------------------------------------------------
+
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     telegram_token = os.environ.get("TELEGRAM_TOKEN")
     telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    
+    if not gemini_api_key or not telegram_token:
+        print("❌ Error: Missing secrets.")
+        return
+
+    print("📢 Sending Check Message...")
+    send_telegram_message(telegram_token, telegram_chat_id, "🚀 <b>Bot Restarted</b>\nScanning for Junior PM / Support Roles in Israel...")
+
+    genai.configure(api_key=gemini_api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    companies = load_companies()
+    if not companies:
+        print("⚠️ No companies found! Make sure companies.json exists.")
+        return
+    
+    print(f"🔎 Scanning {len(companies)} companies...")
+    
+    history = load_history()
+    
+    for company in companies:
+        company_name = company.get("name", "Unknown")
+        print(f"\n🏢 {company_name}...")
+        jobs = fetch_jobs(company)
+        
+        for job in jobs:
+            title = job.get("title", "")
+            url = job.get("url", "")
+            location = job.get("location", "")
+            job_id = f"{company_name}:{title}"
+            
+            # אם כבר שלחנו בעבר - דלג
+            if job_id in history:
+                continue
+
+            if not matches_filter(title, location):
+                continue
+
+            print(f"   🤖 Evaluating: {title}")
+            score, reason = rate_job_with_ai(title, company_name, location, url, model)
+            
+            # שומרים להיסטוריה כדי לא לבדוק שוב
+            history.append(job_id)
+            
+            if score >= 60:
+                print(f"   ✅ FOUND ({score})! Sending...")
+                msg = f"🎯 <b>Job Opportunity</b> ({score}/100)\n\n<b>{company_name}</b>\n{title}\n📍 {location}\n\n📝 {reason}\n\n🔗 <a href='{url}'>Link to Job</a>"
+                send_telegram_message(telegram_token, telegram_chat_id, msg)
+                time.sleep(1)
+            else:
+                print(f"   Skipped ({score}): {reason}")
+            
+            time.sleep(1)
+
+    # שמירה סופית
+    save_history(history)
+    print("\n✅ Scan Finished Successfully.")
+
+if __name__ == "__main__":
+    main()
