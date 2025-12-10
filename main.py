@@ -170,8 +170,8 @@ Return JSON only: {{"score": int, "reason": "str"}}"""
 def main():
     # קריאת משתני סביבה
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    telegram_token = os.environ.get("TELEGRAM_TOKEN")
-    telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    telegram_token = "8453007713:AAEZ38QmvzZ4VrxgHHcUVsHFQkp8BDOOrXc"
+    telegram_chat_id = "1084272922"
     
     # בדיקות תקינות
     if not gemini_api_key:
