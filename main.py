@@ -172,7 +172,7 @@ def main():
         print("Warning: Telegram credentials not set. Will skip sending alerts.")
     
     genai.configure(api_key=gemini_api_key)
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     companies = load_companies()
     history = load_history()
