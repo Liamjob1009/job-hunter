@@ -207,7 +207,7 @@ def main():
             
             history.append(job_id)
             
-            if score > 75 and telegram_token and telegram_chat_id:
+           if job_data["score"] > 40 and telegram_token and telegram_chat_id:
                 message = f"""🎮 <b>New Job Alert!</b>
 
 <b>Company:</b> {company_name}
