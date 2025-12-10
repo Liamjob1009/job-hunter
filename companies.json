@@ -1,0 +1,252 @@
+[
+  {
+    "name": "Overwolf",
+    "type": "greenhouse",
+    "identifier": "overwolf"
+  },
+  {
+    "name": "StreamElements",
+    "type": "greenhouse",
+    "identifier": "streamelements"
+  },
+  {
+    "name": "Moon Active",
+    "type": "greenhouse",
+    "identifier": "moonactive"
+  },
+  {
+    "name": "Plarium",
+    "type": "greenhouse",
+    "identifier": "plaboratory"
+  },
+  {
+    "name": "Playtika",
+    "type": "greenhouse",
+    "identifier": "playtika"
+  },
+  {
+    "name": "CrazyLabs",
+    "type": "greenhouse",
+    "identifier": "crazylabs"
+  },
+  {
+    "name": "SciPlay",
+    "type": "greenhouse",
+    "identifier": "sciplay"
+  },
+  {
+    "name": "Beach Bum",
+    "type": "careers_page",
+    "url": "https://www.beachbumgames.com/careers"
+  },
+  {
+    "name": "Buff",
+    "type": "comeet",
+    "identifier": "buff"
+  },
+  {
+    "name": "Wix",
+    "type": "greenhouse",
+    "identifier": "wix"
+  },
+  {
+    "name": "Monday.com",
+    "type": "greenhouse",
+    "identifier": "mondaydotcom"
+  },
+  {
+    "name": "Lemonade",
+    "type": "greenhouse",
+    "identifier": "lemonade"
+  },
+  {
+    "name": "eToro",
+    "type": "greenhouse",
+    "identifier": "etoro"
+  },
+  {
+    "name": "Plus500",
+    "type": "careers_page",
+    "url": "https://www.plus500.com/Careers"
+  },
+  {
+    "name": "Payoneer",
+    "type": "greenhouse",
+    "identifier": "payoneer"
+  },
+  {
+    "name": "Fiverr",
+    "type": "greenhouse",
+    "identifier": "fiverr"
+  },
+  {
+    "name": "Riskified",
+    "type": "greenhouse",
+    "identifier": "riskified"
+  },
+  {
+    "name": "Rapyd",
+    "type": "greenhouse",
+    "identifier": "rapyd"
+  },
+  {
+    "name": "Elementor",
+    "type": "greenhouse",
+    "identifier": "elementor98"
+  },
+  {
+    "name": "Unity",
+    "type": "greenhouse",
+    "identifier": "unity3d"
+  },
+  {
+    "name": "IronSource",
+    "type": "greenhouse",
+    "identifier": "ironsource"
+  },
+  {
+    "name": "AppsFlyer",
+    "type": "greenhouse",
+    "identifier": "appsflyer"
+  },
+  {
+    "name": "SimilarWeb",
+    "type": "greenhouse",
+    "identifier": "similarweb"
+  },
+  {
+    "name": "Outbrain",
+    "type": "greenhouse",
+    "identifier": "outbrain"
+  },
+  {
+    "name": "Taboola",
+    "type": "greenhouse",
+    "identifier": "taboola"
+  },
+  {
+    "name": "Yotpo",
+    "type": "greenhouse",
+    "identifier": "yotpo"
+  },
+  {
+    "name": "WalkMe",
+    "type": "greenhouse",
+    "identifier": "walkme"
+  },
+  {
+    "name": "Gong",
+    "type": "greenhouse",
+    "identifier": "gongio"
+  },
+  {
+    "name": "Hibob",
+    "type": "comeet",
+    "identifier": "hibob"
+  },
+  {
+    "name": "Deel",
+    "type": "greenhouse",
+    "identifier": "deel"
+  },
+  {
+    "name": "Verbit",
+    "type": "greenhouse",
+    "identifier": "verbit"
+  },
+  {
+    "name": "Optimove",
+    "type": "comeet",
+    "identifier": "optimove"
+  },
+  {
+    "name": "Kaltura",
+    "type": "greenhouse",
+    "identifier": "kaltura"
+  },
+  {
+    "name": "MyHeritage",
+    "type": "greenhouse",
+    "identifier": "myheritage"
+  },
+  {
+    "name": "HoneyBook",
+    "type": "greenhouse",
+    "identifier": "honeybook"
+  },
+  {
+    "name": "Melio",
+    "type": "greenhouse",
+    "identifier": "meaboradmelio"
+  },
+  {
+    "name": "Tipalti",
+    "type": "greenhouse",
+    "identifier": "tipalti"
+  },
+  {
+    "name": "Check Point",
+    "type": "careers_page",
+    "url": "https://careers.checkpoint.com"
+  },
+  {
+    "name": "CyberArk",
+    "type": "greenhouse",
+    "identifier": "cyberark"
+  },
+  {
+    "name": "Cato Networks",
+    "type": "greenhouse",
+    "identifier": "catonetworks"
+  },
+  {
+    "name": "SentinelOne",
+    "type": "greenhouse",
+    "identifier": "sentinelone"
+  },
+  {
+    "name": "Amdocs",
+    "type": "careers_page",
+    "url": "https://jobs.amdocs.com"
+  },
+  {
+    "name": "Nice",
+    "type": "careers_page",
+    "url": "https://www.nice.com/careers"
+  },
+  {
+    "name": "TytoCare",
+    "type": "greenhouse",
+    "identifier": "tytocare"
+  },
+  {
+    "name": "Via",
+    "type": "greenhouse",
+    "identifier": "via"
+  },
+  {
+    "name": "Gett",
+    "type": "greenhouse",
+    "identifier": "gett"
+  },
+  {
+    "name": "Drivenets",
+    "type": "greenhouse",
+    "identifier": "drivenets"
+  },
+  {
+    "name": "Lightricks",
+    "type": "greenhouse",
+    "identifier": "lightricks"
+  },
+  {
+    "name": "Starkware",
+    "type": "greenhouse",
+    "identifier": "starkware"
+  },
+  {
+    "name": "Fireblocks",
+    "type": "greenhouse",
+    "identifier": "fireblocks"
+  }
+]
