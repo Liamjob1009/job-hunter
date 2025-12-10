@@ -1,7 +1,7 @@
 [
   {
     "name": "Overwolf",
-    "type": "greenhouse",
+    "type": "comeet",
     "identifier": "overwolf"
   },
   {
@@ -17,7 +17,7 @@
   {
     "name": "Plarium",
     "type": "greenhouse",
-    "identifier": "plaboratory"
+    "identifier": "plarium"
   },
   {
     "name": "Playtika",
@@ -46,13 +46,13 @@
   },
   {
     "name": "Wix",
-    "type": "greenhouse",
+    "type": "comeet",
     "identifier": "wix"
   },
   {
     "name": "Monday.com",
     "type": "greenhouse",
-    "identifier": "mondaydotcom"
+    "identifier": "monday"
   },
   {
     "name": "Lemonade",
@@ -137,7 +137,7 @@
   {
     "name": "Gong",
     "type": "greenhouse",
-    "identifier": "gongio"
+    "identifier": "gong"
   },
   {
     "name": "Hibob",
