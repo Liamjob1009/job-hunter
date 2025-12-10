@@ -7,31 +7,36 @@ import re
 import time
 from urllib.parse import urljoin
 
-# --- הגדרות אישיות (עודכן לפי קורות החיים שלך) ---
-
+# --- הגדרות אישיות משופרות ---
 MY_RESUME = """
 Name: Liam Edelman
 Location: Tel Aviv, Israel
-Looking for: Junior Customer Success / Customer Support / Operations positions in High-Tech.
+Looking for: 
+1. Junior Project Management / Operations / Coordinator roles (Based on my experience as Site Manager).
+2. Customer Success / Customer Support roles (Open to all levels, not just Junior).
+
 Experience:
-- Project & Site Manager at Edelman Renovations: Managed end-to-end projects, client facing, problem solving under pressure.
-- Service experience (Giraffe): Fast-paced environment, high service orientation.
-- IDF (Meitav): Recruiter, data-driven decision making, working under pressure.
-Skills: SQL, Microsoft Excel, CRM Familiarity, Analytical capabilities, English (Proficient), Hebrew (Native).
+- Project & Site Manager: Managed end-to-end projects, timelines, suppliers, and clients.
+- Customer Service (Giraffe): High-pressure environment, service-oriented.
+- IDF Recruiter: Data-driven, sorting and matching candidates.
+
+Skills: SQL, Excel, Tech-savvy, English (Proficient), Hebrew (Native).
 """
 
-# מילות מפתח לסינון ראשוני
+# --- מילות מפתח מעודכנות ---
+# הוספתי לכאן Project, Coordinator, Success
 KEYWORDS_INCLUDE = [
-    "Success", "Support", "Care", "Fraud", "Risk", "Operation", 
+    "Success", "Support", "Care", "Operation", "Project", "Coordinator",
     "Community", "Game", "Junior", "Entry", "Specialist", "QA",
-    "Quality", "Trust", "Product", "Tier", "Analyst"
+    "Trust", "Product", "Tier", "Analyst", "Manager", "Admin"
 ]
 
+# הורדתי את "Manager" מהחסימה כדי שלא תפספס ניהול פרויקטים
 KEYWORDS_EXCLUDE = [
-    "Senior", "Head", "Director", "Lead", "VP", "Manager", 
+    "Senior", "Head", "Director", "VP", "Chief",
     "Engineer", "Developer", "DevOps", "Backend", "Frontend",
     "Full Stack", "Fullstack", "Principal", "Staff", "Architect",
-    "Accounting", "Finance", "Legal", "Sales"
+    "Accounting", "Finance", "Legal", "Sales", "R&D"
 ]
 
 HISTORY_FILE = "history.json"
@@ -43,14 +48,11 @@ def load_companies():
         with open("companies.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        print("Error: companies.json file not found!")
         return []
 
 def load_history():
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, "r") as f:
-            return json.load(f)
-    return []
+    # מחזיר רשימה ריקה כדי לוודא שאתה רואה תוצאות עכשיו (בטל את ההערה בהמשך כדי לזכור)
+    return [] 
 
 def save_history(history):
     with open(HISTORY_FILE, "w") as f:
@@ -67,7 +69,7 @@ def send_telegram_message(token, chat_id, message):
     except:
         return False
 
-# --- פונקציות חיפוש משרות ---
+# --- פונקציות חיפוש ---
 
 def fetch_greenhouse_jobs(identifier):
     url = f"https://boards-api.greenhouse.io/v1/boards/{identifier}/jobs"
@@ -84,8 +86,8 @@ def fetch_greenhouse_jobs(identifier):
                     "location": loc_name
                 })
             return jobs
-    except Exception as e:
-        print(f"Error fetching Greenhouse: {e}")
+    except:
+        return []
     return []
 
 def fetch_comeet_jobs(identifier):
@@ -102,8 +104,8 @@ def fetch_comeet_jobs(identifier):
                 if title:
                     jobs.append({"title": title, "url": href, "location": ""})
             return jobs
-    except Exception as e:
-        print(f"Error fetching Comeet: {e}")
+    except:
+        return []
     return []
 
 def fetch_careers_page_jobs(url, company_name):
@@ -119,8 +121,8 @@ def fetch_careers_page_jobs(url, company_name):
                     if not job_url.startswith("http"): job_url = urljoin(url, job_url)
                     jobs.append({"title": text, "url": job_url, "location": ""})
             return jobs
-    except Exception as e:
-        print(f"Error fetching careers page: {e}")
+    except:
+        return []
     return []
 
 def fetch_jobs(company):
@@ -132,36 +134,46 @@ def fetch_jobs(company):
 
 def matches_filter(title, location):
     title_lower = title.lower()
-    if any(kw.lower() in title_lower for kw in KEYWORDS_EXCLUDE): return False
-    if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): return False
     
-    # סינון מיקום (ישראל/תל אביב)
+    # בדיקת מילות חסימה (כמו Senior, Engineer)
+    if any(kw.lower() in title_lower for kw in KEYWORDS_EXCLUDE): 
+        return False
+    
+    # בדיקת מילות חיוב
+    if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): 
+        return False
+    
+    # --- סינון ישראל קשוח ---
     if location and len(location) > 2:
         loc_lower = location.lower()
-        if "israel" not in loc_lower and "tel aviv" not in loc_lower and "remote" not in loc_lower:
-            return False
+        # חייב להיות ישראל או תל אביב או חיפה וכו'
+        is_israel = "israel" in loc_lower or "tel aviv" in loc_lower or "jerusalem" in loc_lower or "herzliya" in loc_lower or "haifa" in loc_lower or "remote" in loc_lower
+        
+        # אם כתוב רק "Remote" בלי מדינה, ה-AI יחליט. אם כתוב מדינה אחרת - לפסול.
+        if not is_israel:
+             # אם המיקום הוא מפורשות מדינה אחרת
+             if "united states" in loc_lower or "london" in loc_lower or "uk" in loc_lower or "germany" in loc_lower:
+                 return False
             
     return True
 
 def rate_job_with_ai(title, company_name, location, url, model):
-    # הוראות ל-AI בהתאם לקורות החיים שלך
     prompt = f"""
-    Act as a Career Consultant for Liam Edelman.
-    Candidate Profile: "{MY_RESUME}"
+    Role: Career Consultant for Liam.
+    Profile: "{MY_RESUME}"
+    Job: {title} at {company_name} ({location})
+    Link: {url}
 
-    Evaluate this Job:
-    - Title: {title}
-    - Company: {company_name}
-    - Location Info: {location}
-    - Link: {url}
+    LOGIC:
+    1. **LOCATION**: MUST be Israel. If text says "US", "UK", "Europe" -> Score 0.
+    
+    2. **ROLE TYPE MATCHING**:
+       - IF "Customer Support" or "Customer Success": High Score (75-100). Experience level is flexible (don't reject if not Junior).
+       - IF "Project Manager" / "Operations" / "Coordinator": High Score ONLY if "Junior" or "Entry Level" or matches 1-2 years experience.
+       - IF "Engineering" / "Developer": Score 0.
 
-    CRITICAL RULES:
-    1. LOCATION: If job is clearly NOT in Israel, Score = 0.
-    2. EXPERIENCE: If it requires "Senior", "Manager", or 3+ years experience, Score = 0.
-    3. FIT: Look for Junior/Entry CS, Support, Operations roles. Use the SQL/Excel skills as a bonus.
-    4. RELEVANCE: Rate 0-100.
-
-    Return JSON ONLY: {{"score": int, "reason": "short explanation"}}
+    3. **OUTPUT**:
+       Return JSON ONLY: {{"score": int, "reason": "concise explanation"}}
     """
     
     try:
@@ -170,7 +182,7 @@ def rate_job_with_ai(title, company_name, location, url, model):
         result = json.loads(text)
         return result.get("score", 0), result.get("reason", "")
     except:
-        return 0, "Error in AI rating"
+        return 0, "AI Error"
 
 # --- Main Execution ---
 
@@ -178,52 +190,3 @@ def main():
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     telegram_token = os.environ.get("TELEGRAM_TOKEN")
     telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    
-    if not gemini_api_key or not telegram_token:
-        print("Error: Missing secrets in GitHub Settings.")
-        return
-
-    print("🚀 Starting Smart Job Hunt (Liam's Profile)...")
-    
-    genai.configure(api_key=gemini_api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    
-    companies = load_companies()
-    history = load_history()
-    
-    for company in companies:
-        company_name = company.get("name", "Unknown")
-        print(f"Scanning {company_name}...")
-        jobs = fetch_jobs(company)
-        
-        for job in jobs:
-            title = job.get("title", "")
-            url = job.get("url", "")
-            location = job.get("location", "")
-            job_id = f"{company_name}:{title}"
-            
-            if job_id in history: continue
-            
-            if not matches_filter(title, location):
-                continue
-
-            print(f"  AI Checking: {title} ({location})")
-            
-            score, reason = rate_job_with_ai(title, company_name, location, url, model)
-            
-            history.append(job_id)
-            
-            if score >= 70:
-                print(f"  ✅ MATCH! Score: {score}")
-                msg = f"🎯 <b>Mishra For Liam!</b> ({score}/100)\n\n<b>{company_name}</b>\n{title}\n\n📍 {location}\n💡 {reason}\n\n<a href='{url}'>Apply Here</a>"
-                send_telegram_message(telegram_token, telegram_chat_id, msg)
-            else:
-                print(f"  ❌ Low Score: {score} ({reason})")
-            
-            time.sleep(1)
-
-    save_history(history)
-    print("Scan complete!")
-
-if __name__ == "__main__":
-    main()
