@@ -1,0 +1,7 @@
+google-generativeai
+requests
+beautifulsoup4
+python-telegram-bot
+beautifulsoup4
+google-generativeai
+requests
