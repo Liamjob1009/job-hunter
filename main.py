@@ -51,7 +51,7 @@ def load_companies():
     except: return []
 
 def load_history():
-    # --- ביטול זמני של ההיסטוריה כדי לראות תוצאות מיד ---
+    # מחזיר רשימה ריקה כדי לוודא שאתה רואה דיבוג
     return [] 
 
 def save_history(history):
@@ -87,7 +87,7 @@ def fetch_comeet_jobs(identifier):
             href = elem.get("href", "")
             if href and not href.startswith("http"): href = f"https://www.comeet.com{href}"
             if title:
-                jobs.append({"title": title, "url": href, "location": "Unknown"}) # קומיט בעייתי במיקום
+                jobs.append({"title": title, "url": href, "location": "Unknown"})
         return jobs
     except: pass
     return []
@@ -115,14 +115,12 @@ def fetch_jobs(company):
     return []
 
 def matches_filter(title, location):
-    # סינון בסיסי ביותר כדי לתת ל-AI צ'אנס
     title_lower = title.lower()
     if any(kw.lower() in title_lower for kw in KEYWORDS_EXCLUDE): return False
     if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): return False
     return True
 
 def rate_job_with_ai(title, company_name, location, url, model):
-    # פרומפט פשוט וברור
     prompt = f"""
     Rate this job for Liam (Junior PM / Support / Ops).
     Job: {title} at {company_name}
@@ -137,5 +135,74 @@ def rate_job_with_ai(title, company_name, location, url, model):
     try:
         response = model.generate_content(prompt)
         text = response.text.strip().replace("```json", "").replace("```", "")
+        # תיקון: ניקוי קפדני יותר של ג'ייסון
+        if "{" in text:
+            text = text[text.find("{"):text.rfind("}")+1]
+        
         result = json.loads(text)
-        return result.get("score", 0), result.get("reason
+        # הנה השורה שתוקנה:
+        return result.get("score", 0), result.get("reason", "No reason provided")
+    except Exception as e:
+        return 0, f"AI Error: {str(e)}"
+
+# --- Main ---
+
+def main():
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    telegram_token = os.environ.get("TELEGRAM_TOKEN")
+    telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    
+    if not gemini_api_key or not telegram_token: return
+
+    send_telegram_message(telegram_token, telegram_chat_id, "🕵️ <b>Debug Mode Fixed</b>\nSending first 5 jobs...")
+
+    genai.configure(api_key=gemini_api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    companies = load_companies()
+    history = []
+    debug_count = 0
+    
+    for company in companies:
+        company_name = company.get("name", "Unknown")
+        print(f"Scanning {company_name}...")
+        
+        try:
+            jobs = fetch_jobs(company)
+            
+            for job in jobs:
+                title = job.get("title", "")
+                url = job.get("url", "")
+                location = job.get("location", "Unknown")
+                
+                if not matches_filter(title, location): continue
+                
+                score, reason = rate_job_with_ai(title, company_name, location, url, model)
+                
+                # מצב דיבוג: שולח את ה-5 הראשונים לא משנה מה
+                if debug_count < 5:
+                    debug_msg = f"""🐞 <b>DEBUG #{debug_count+1}</b>
+🏢 {company_name}
+💼 {title}
+🤖 Score: {score}
+💭 Reason: {reason}
+🔗 {url}"""
+                    send_telegram_message(telegram_token, telegram_chat_id, debug_msg)
+                    debug_count += 1
+                    time.sleep(1)
+                
+                # אם הציון גבוה, שלח רגיל
+                elif score >= 50:
+                    msg = f"🎯 <b>Match Found!</b> ({score})\n{company_name}\n{title}\n{url}"
+                    send_telegram_message(telegram_token, telegram_chat_id, msg)
+                
+                time.sleep(1)
+                
+        except Exception as e:
+            print(f"Error: {e}")
+            continue
+
+    send_telegram_message(telegram_token, telegram_chat_id, "🏁 Debug Scan Complete.")
+
+if __name__ == "__main__":
+    main()
