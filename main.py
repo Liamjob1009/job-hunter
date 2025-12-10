@@ -51,8 +51,7 @@ def load_companies():
     except: return []
 
 def load_history():
-    # מחזיר רשימה ריקה כדי לוודא שאתה רואה דיבוג
-    return [] 
+    return [] # דיבוג - מתעלמים מהיסטוריה
 
 def save_history(history):
     with open(HISTORY_FILE, "w") as f: json.dump(history, f, indent=2)
@@ -120,6 +119,35 @@ def matches_filter(title, location):
     if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): return False
     return True
 
+# --- פונקציה חכמה לבחירת מודל ---
+def get_best_available_model():
+    try:
+        print("Listing available models...")
+        models = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                models.append(m.name)
+        
+        print(f"Available models: {models}")
+        
+        # עדיפות ראשונה: פלאש 1.5 (מהיר וטוב)
+        if 'models/gemini-1.5-flash' in models:
+            return 'models/gemini-1.5-flash'
+        # עדיפות שניה: פרו 1.5
+        elif 'models/gemini-1.5-pro' in models:
+            return 'models/gemini-1.5-pro'
+        # עדיפות שלישית: פרו 1.0 (הישן והטוב)
+        elif 'models/gemini-1.0-pro' in models:
+            return 'models/gemini-1.0-pro'
+        # אם אין ברירה - קח את הראשון שיש
+        elif models:
+            return models[0]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error listing models: {e}")
+        return 'gemini-pro' # ברירת מחדל נואשת
+
 def rate_job_with_ai(title, company_name, location, url, model):
     prompt = f"""
     Rate this job for Liam (Junior PM / Support / Ops).
@@ -135,12 +163,10 @@ def rate_job_with_ai(title, company_name, location, url, model):
     try:
         response = model.generate_content(prompt)
         text = response.text.strip().replace("```json", "").replace("```", "")
-        # תיקון: ניקוי קפדני יותר של ג'ייסון
         if "{" in text:
             text = text[text.find("{"):text.rfind("}")+1]
         
         result = json.loads(text)
-        # הנה השורה שתוקנה:
         return result.get("score", 0), result.get("reason", "No reason provided")
     except Exception as e:
         return 0, f"AI Error: {str(e)}"
@@ -154,13 +180,21 @@ def main():
     
     if not gemini_api_key or not telegram_token: return
 
-    send_telegram_message(telegram_token, telegram_chat_id, "🕵️ <b>Debug Mode Fixed</b>\nSending first 5 jobs...")
-
+    # --- חיבור לגוגל ---
     genai.configure(api_key=gemini_api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # --- זיהוי אוטומטי של המודל ---
+    model_name = get_best_available_model()
+    
+    if not model_name:
+        send_telegram_message(telegram_token, telegram_chat_id, "❌ Error: No AI models found for your API key.")
+        return
+
+    send_telegram_message(telegram_token, telegram_chat_id, f"🧠 <b>AI Connected</b>\nUsing model: {model_name}\nStarting scan...")
+    
+    model = genai.GenerativeModel(model_name)
     
     companies = load_companies()
-    history = []
     debug_count = 0
     
     for company in companies:
