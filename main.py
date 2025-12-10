@@ -14,7 +14,7 @@ Name: Liam Edelman
 Location: Tel Aviv, Israel
 Looking for: 
 1. Junior Project Management / Operations / Coordinator roles.
-2. Customer Success / Customer Support roles (Open to all levels).
+2. Customer Success / Customer Support / Trust & Safety roles.
 Experience:
 - Project & Site Manager: Managed end-to-end projects.
 - Customer Service (Giraffe): High-pressure environment.
@@ -25,7 +25,7 @@ Skills: SQL, Excel, Tech-savvy, English (Proficient), Hebrew (Native).
 KEYWORDS_INCLUDE = [
     "Success", "Support", "Care", "Operation", "Project", "Coordinator",
     "Community", "Game", "Junior", "Entry", "Specialist", "QA",
-    "Trust", "Product", "Tier", "Analyst", "Manager", "Admin"
+    "Trust", "Product", "Tier", "Analyst", "Manager", "Admin", "Client"
 ]
 
 KEYWORDS_EXCLUDE = [
@@ -75,12 +75,11 @@ def send_telegram_message(token, chat_id, message):
     except:
         return False
 
-# --- פונקציות חיפוש משופרות עם HEADERS ---
+# --- פונקציות חיפוש משופרות ---
 
 def fetch_greenhouse_jobs(identifier):
     url = f"https://boards-api.greenhouse.io/v1/boards/{identifier}/jobs"
     try:
-        # הוספתי headers כדי לא להיחסם
         response = requests.get(url, headers=HEADERS, timeout=15)
         if response.status_code == 200:
             data = response.json()
@@ -93,10 +92,8 @@ def fetch_greenhouse_jobs(identifier):
                     "location": loc_name
                 })
             return jobs
-        else:
-            print(f"⚠️ Greenhouse Error {response.status_code} for {identifier}")
-    except Exception as e:
-        print(f"⚠️ Connection Error (Greenhouse): {e}")
+    except:
+        return []
     return []
 
 def fetch_comeet_jobs(identifier):
@@ -146,8 +143,6 @@ def matches_filter(title, location):
     if any(kw.lower() in title_lower for kw in KEYWORDS_EXCLUDE): return False
     if not any(kw.lower() in title_lower for kw in KEYWORDS_INCLUDE): return False
     
-    # הקלה בסינון: אם המיקום ריק, נניח שזה בסדר ונשאיר ל-AI להחליט
-    # זה פותר בעיה באתרים שלא מדווחים מיקום כמו שצריך
     if location and len(location) > 2:
         loc_lower = location.lower()
         is_israel = "israel" in loc_lower or "tel aviv" in loc_lower or "jerusalem" in loc_lower or "herzliya" in loc_lower or "haifa" in loc_lower or "remote" in loc_lower
@@ -164,11 +159,11 @@ def rate_job_with_ai(title, company_name, location, url, model):
     Link: {url}
 
     LOGIC:
-    1. LOCATION: MUST be Israel. If text says "US", "UK", "Europe" -> Score 0.
-    2. ROLE TYPE MATCHING:
-       - IF "Customer Support" or "Customer Success": High Score (75-100). Flexible exp.
-       - IF "Project Manager" / "Operations": High Score ONLY if Junior/Entry.
-       - IF "Engineering": Score 0.
+    1. LOCATION: MUST be Israel.
+    2. SCORING:
+       - **Customer Support / Success / Trust**: BE GENEROUS. Even if it requires 1-3 years experience, give it a high score (70+). Do NOT reject because of experience.
+       - **Project / Ops**: If it sounds like an entry-level or coordinator role, give it 70+.
+       - **Gaming Companies**: Give a bonus score of +10.
     
     Return JSON ONLY: {{"score": int, "reason": "concise explanation"}}
     """
@@ -198,7 +193,7 @@ def main():
     stats = {"companies": 0, "jobs_scanned": 0, "jobs_filtered_in": 0, "matches_found": 0}
 
     print("📢 Sending Check Message...")
-    send_telegram_message(telegram_token, telegram_chat_id, "🚀 <b>Bot Restarted V4 (Anti-Block)</b>\nRunning with browser simulation headers...")
+    send_telegram_message(telegram_token, telegram_chat_id, "🚀 <b>Bot V5 (The Flexible One)</b>\nLowered threshold to 45. Let's find jobs!")
 
     genai.configure(api_key=gemini_api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
@@ -221,11 +216,6 @@ def main():
             
             try:
                 jobs = fetch_jobs(company)
-                
-                # אם קיבלנו 0 משרות מחברה גדולה, זה חשוד
-                if len(jobs) == 0:
-                    print(f"   ⚠️ Warning: 0 jobs found for {company_name} (Possible block or empty)")
-
                 stats["jobs_scanned"] += len(jobs)
                 
                 for job in jobs:
@@ -243,10 +233,11 @@ def main():
                     
                     history.append(job_id)
                     
-                    if score >= 60:
+                    # --- השינוי הגדול: הורדתי את הרף ל-45 ---
+                    if score >= 45:
                         stats["matches_found"] += 1
                         print(f"   ✅ FOUND ({score})! Sending...")
-                        msg = f"🎯 <b>Opportunity Found!</b> ({score}/100)\n\n<b>{company_name}</b>\n{title}\n📍 {location}\n\n📝 {reason}\n\n🔗 <a href='{url}'>Link to Job</a>"
+                        msg = f"🎯 <b>Job Found</b> ({score}/100)\n\n<b>{company_name}</b>\n{title}\n📍 {location}\n\n📝 {reason}\n\n🔗 <a href='{url}'>Link to Job</a>"
                         send_telegram_message(telegram_token, telegram_chat_id, msg)
                         time.sleep(1)
                     else:
