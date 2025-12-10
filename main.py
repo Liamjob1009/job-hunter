@@ -58,7 +58,7 @@ def send_telegram_message(token, chat_id, message):
         if response.status_code == 200:
             return True
         else:
-            print(f"Telegram Error: {response.text}")
+            print(f"Telegram Error details: {response.text}")
             return False
     except Exception as e:
         print(f"Error sending Telegram message: {e}")
@@ -168,26 +168,26 @@ Return JSON only: {{"score": int, "reason": "str"}}"""
 # --- Main Execution ---
 
 def main():
-    # קריאת משתני סביבה
+    # הגדרות (כאן הכנסתי את הפרטים שלך)
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    telegram_token = "8453007713:AAEZ38QmvzZ4VrxgHHcUVsHFQkp8BDOOrXc"
+    
+    # === הפרטים החדשים שלך מוכנסים כאן ===
+    telegram_token = "8453007713:AAG6WZ-op--layRu0YqVFQ0RTHy6RguTFns"
     telegram_chat_id = "1084272922"
     
-    # בדיקות תקינות
+    # בדיקת מפתח ג'מיני
     if not gemini_api_key:
         print("Error: GEMINI_API_KEY environment variable not set")
         return
     
-    if not telegram_token or not telegram_chat_id:
-        print("Warning: Telegram credentials not set. Will skip sending alerts.")
+    # שליחת הודעת בדיקה מיידית
+    print("Attempting to send test message to Telegram...")
+    test_sent = send_telegram_message(telegram_token, telegram_chat_id, "🚀 Bot Started! Test Message.")
+    
+    if test_sent:
+        print("✅ Test message sent successfully! Check your Telegram.")
     else:
-        # שליחת הודעת בדיקה בהתחלה
-        print("Sending test message to Telegram...")
-        test_sent = send_telegram_message(telegram_token, telegram_chat_id, "🚀 Bot Started! Test Message.")
-        if test_sent:
-            print("Test message sent successfully!")
-        else:
-            print("Failed to send test message. Check your Token/ID.")
+        print("❌ Failed to send test message.")
 
     # הגדרת מודל ה-AI
     genai.configure(api_key=gemini_api_key)
@@ -197,3 +197,68 @@ def main():
     if not companies:
         print("No companies found in companies.json")
         return
+
+    history = load_history()
+    new_jobs_found = 0
+    alerts_sent = 0
+    
+    print(f"Starting job scan for {len(companies)} companies...")
+    
+    for company in companies:
+        company_name = company.get("name", "Unknown")
+        print(f"\nScanning {company_name}...")
+        
+        jobs = fetch_jobs(company)
+        print(f"  Found {len(jobs)} total jobs")
+        
+        for job in jobs:
+            title = job.get("title", "")
+            url = job.get("url", "")
+            
+            # בדיקה אם המשרה כבר נסרקה בעבר
+            job_id = f"{company_name}:{title}:{url}"
+            if job_id in history:
+                continue
+            
+            # סינון לפי מילות מפתח
+            if not matches_filter(title):
+                continue
+            
+            print(f"  Evaluating: {title}")
+            new_jobs_found += 1
+            
+            # דירוג AI
+            score, reason = rate_job_with_ai(title, company_name, model)
+            print(f"    Score: {score} - {reason}")
+            
+            # שמירה בהיסטוריה
+            history.append(job_id)
+            
+            # שליחה לטלגרם אם הציון גבוה
+            if score > 40:
+                message = f"""🎮 <b>New Job Alert!</b>
+
+<b>Company:</b> {company_name}
+<b>Role:</b> {title}
+<b>Score:</b> {score}/100
+
+<b>Why:</b> {reason}
+
+<a href="{url}">Apply Here</a>"""
+                
+                if send_telegram_message(telegram_token, telegram_chat_id, message):
+                    alerts_sent += 1
+                    print(f"    Alert sent!")
+            
+            time.sleep(1)
+    
+    save_history(history)
+    
+    print(f"\n{'='*50}")
+    print(f"Scan complete!")
+    print(f"New matching jobs found: {new_jobs_found}")
+    print(f"Alerts sent: {alerts_sent}")
+    print(f"Total jobs in history: {len(history)}")
+
+if __name__ == "__main__":
+    main()
