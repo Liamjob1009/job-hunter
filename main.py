@@ -25,7 +25,7 @@ Skills: SQL, Excel, Tech-savvy, English (Proficient), Hebrew (Native).
 KEYWORDS_INCLUDE = [
     "Success", "Support", "Care", "Operation", "Project", "Coordinator",
     "Community", "Game", "Junior", "Entry", "Specialist", "QA",
-    "Trust", "Product", "Tier", "Analyst", "Manager", "Admin", "Client"
+    "Trust", "Product", "Tier", "Analyst", "Manager", "Admin", "Client", "Help"
 ]
 
 KEYWORDS_EXCLUDE = [
@@ -152,20 +152,18 @@ def matches_filter(title, location):
     return True
 
 def rate_job_with_ai(title, company_name, location, url, model):
+    # פרומפט אגרסיבי במיוחד
     prompt = f"""
-    Role: Career Consultant for Liam.
-    Profile: "{MY_RESUME}"
+    You are a lenient job matcher.
     Job: {title} at {company_name} ({location})
-    Link: {url}
-
-    LOGIC:
-    1. LOCATION: MUST be Israel.
-    2. SCORING:
-       - **Customer Support / Success / Trust**: BE GENEROUS. Even if it requires 1-3 years experience, give it a high score (70+). Do NOT reject because of experience.
-       - **Project / Ops**: If it sounds like an entry-level or coordinator role, give it 70+.
-       - **Gaming Companies**: Give a bonus score of +10.
     
-    Return JSON ONLY: {{"score": int, "reason": "concise explanation"}}
+    INSTRUCTIONS:
+    1. IGNORE years of experience. Even if not "Junior", we want to see it.
+    2. IF title includes "Support", "Success", "Service", "Help", "Tier", "Specialist": SCORE = 90.
+    3. IF title includes "Project", "Coordinator", "Operations", "Admin": SCORE = 85.
+    4. ONLY score 0 if it is strictly Engineering/Developer/Finance/Legal.
+    
+    Return JSON ONLY: {{"score": int, "reason": "very short reason"}}
     """
     try:
         response = model.generate_content(prompt)
@@ -193,7 +191,7 @@ def main():
     stats = {"companies": 0, "jobs_scanned": 0, "jobs_filtered_in": 0, "matches_found": 0}
 
     print("📢 Sending Check Message...")
-    send_telegram_message(telegram_token, telegram_chat_id, "🚀 <b>Bot V5 (The Flexible One)</b>\nLowered threshold to 45. Let's find jobs!")
+    send_telegram_message(telegram_token, telegram_chat_id, "🚀 <b>Bot V6 (Nuclear Option)</b>\nSending almost EVERYTHING. Prepare for spam!")
 
     genai.configure(api_key=gemini_api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
@@ -233,8 +231,8 @@ def main():
                     
                     history.append(job_id)
                     
-                    # --- השינוי הגדול: הורדתי את הרף ל-45 ---
-                    if score >= 45:
+                    # --- הורדת הרף לרצפה (15) ---
+                    if score >= 15:
                         stats["matches_found"] += 1
                         print(f"   ✅ FOUND ({score})! Sending...")
                         msg = f"🎯 <b>Job Found</b> ({score}/100)\n\n<b>{company_name}</b>\n{title}\n📍 {location}\n\n📝 {reason}\n\n🔗 <a href='{url}'>Link to Job</a>"
