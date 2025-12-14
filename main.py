@@ -45,7 +45,7 @@ def send_telegram_message(token, chat_id, message):
     except:
         return False
 
-def load_companies():
+def     load_companies():
     try:
         with open("companies.json", "r") as f: return json.load(f)
     except: return []
